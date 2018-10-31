@@ -63,10 +63,10 @@ def return_cifar10_testing(dataset_path, download = False, mini_batch_size = 64)
 def save_checkpoint(net, epoch, net_name, root_path):
     time_string = strftime("%d%m%Y_%H%M%S", gmtime())
     state = {'net': net.state_dict(), 'epoch': epoch, 'time': time_string}
-    if not os.path.isdir('checkpoint'): os.mkdir('checkpoint')
+    if not os.path.isdir(root_path): os.mkdir(root_path)
     print('[INFO] Saving checkpoint: ' + 'ckpt_'+str(time_string)+'_ep'+str(epoch)+'.t7')
     if(root_path.endswith('/')): root_path = root_path[:-1]
-    torch.save(state, root_path + '/ckpt_'+str(net_name)+str(time_string)+'_ep'+str(epoch)+'.t7')
+    torch.save(state, root_path + '/ckpt_'+str(net_name)+'_'+str(time_string)+'_ep'+str(epoch)+'.t7')
 
 
 def main():
@@ -167,7 +167,9 @@ def main():
         print('[%d, %5d] lr: %.5f; loss: %.5f; accuracy: %.5f'
                %(epoch, global_step, LEARNING_RATE, np.mean(loss_list), accuracy))
         if(epoch==60 or epoch==120 or epoch==160):
-             if(ID!=''): checkpoint_path = ROOT_PATH + '/' + ID + '/checkpoint/'
+             if(ROOT_PATH.endswith('/')): root_path = ROOT_PATH[:-1]
+             else: root_path = ROOT_PATH
+             if(ID!=''): checkpoint_path = root_path + '/' + ID + '/checkpoint/'
              else: checkpoint_path = ROOT_PATH + '/checkpoint/'
              save_checkpoint(net, epoch, NET_TYPE, checkpoint_path)
              LEARNING_RATE = LEARNING_RATE * 0.2
