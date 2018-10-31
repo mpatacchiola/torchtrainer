@@ -113,7 +113,12 @@ def main():
     else:
         raise ValueError('[ERROR] the architecture type ' + str(NET_TYPE) + ' is unknown.') 
     print("[INFO] Architecture: " + str(NET_TYPE))      
-    torch.cuda.set_device(DEVICE_ID)
+    #torch.cuda.set_device(DEVICE_ID)
+    #os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
+    #os.environ["CUDA_VISIBLE_DEVICES"]=str(DEVICE_ID)
+    print('[INFO] Is CUDA available: ' + str(torch.cuda.is_available()))
+    print('[INFO] TOT available devices: ' + str(torch.cuda.device_count()))
+    print('[INFO] Setting device: ' + str(DEVICE_ID))
     device = torch.device('cuda:'+str(DEVICE_ID) if torch.cuda.is_available() else 'cpu')
     print("[INFO] Torch is using device: " + str(torch.cuda.current_device()))    
     net.to(device)
@@ -161,7 +166,7 @@ def main():
         #Epoch finished
         print('[%d, %5d] lr: %.5f; loss: %.5f; accuracy: %.5f'
                %(epoch, global_step, LEARNING_RATE, np.mean(loss_list), accuracy))
-        if(epoch==0 or epoch==60 or epoch==120 or epoch==160):
+        if(epoch==60 or epoch==120 or epoch==160):
              if(ID!=''): checkpoint_path = ROOT_PATH + '/' + ID + '/checkpoint/'
              else: checkpoint_path = ROOT_PATH + '/checkpoint/'
              save_checkpoint(net, epoch, NET_TYPE, checkpoint_path)
