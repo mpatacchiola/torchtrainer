@@ -42,9 +42,9 @@ from time import gmtime, strftime
 def return_cifar10_training(dataset_path, download = False, mini_batch_size = 64):
 
     transform = transforms.Compose([transforms.RandomHorizontalFlip(),
-                                    transforms.RandomCrop(size=[32,32], padding=4)]
+                                    transforms.RandomCrop(size=[32,32], padding=4),
                                     transforms.ToTensor(),
-                                    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)))
+                                    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
     #transform = transforms.Compose([transforms.ToTensor(),
     #                                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     trainset = torchvision.datasets.CIFAR10(root=dataset_path, train=True,
@@ -66,7 +66,7 @@ def save_checkpoint(net, epoch, net_name, root_path):
     if not os.path.isdir('checkpoint'): os.mkdir('checkpoint')
     print('[INFO] Saving checkpoint: ' + 'ckpt_'+str(time_string)+'_ep'+str(epoch)+'.t7')
     if(root_path.endswith('/')): root_path = root_path[:-1]
-    torch.save(state, root_path + '/checkpoint/ckpt_'+str(net_name)+str(time_string)+'_ep'+str(epoch)+'.t7')
+    torch.save(state, root_path + '/ckpt_'+str(net_name)+str(time_string)+'_ep'+str(epoch)+'.t7')
 
 
 def main():
@@ -74,12 +74,14 @@ def main():
     parser = argparse.ArgumentParser(description='PyTorch Training')
     parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
     parser.add_argument('--gpu', default=0, type=int, help='GPU id')
+    parser.add_argument('--id', default='', type=str, help='experiment ID')
     parser.add_argument('--arch', default='resnet34', type=str, help='architecture type: resnet18/152')
     parser.add_argument('--epochs', default=200, type=int, help='total training epochs')
     parser.add_argument('--batch', default=128, type=int, help='mini-batch size')
     parser.add_argument('--resume', '-r', type=str, help='resume from checkpoint')
     parser.add_argument('--root', default='./', type=str, help='root path')
     parser.add_argument('--data', default='./', type=str, help='data path')
+    parser.add_argument('--prate', default=100, type=int, help='print-rate on terminal')
     args = parser.parse_args()
     DEVICE_ID = args.gpu
     LEARNING_RATE = args.lr
@@ -88,11 +90,15 @@ def main():
     ROOT_PATH = args.root
     DATASET_PATH = args.data
     NET_TYPE = args.arch
+    PRINT_RATE = args.prate
+    ID = args.id
+    print("[INFO] ID: " + str(ID))
     print("[INFO] Root path: " + str(ROOT_PATH))
     print("[INFO] Dataset path: " + str(DATASET_PATH))
     print("[INFO] Total epochs: " + str(TOT_EPOCHS))
     print("[INFO] Mini-batch size: " + str(MINI_BATCH_SIZE))
     print("[INFO] Learning rate: " + str(LEARNING_RATE))
+    print("[INFO] Printing rate: " + str(PRINT_RATE))
     ##Generate net
     if(NET_TYPE == 'resnet18'):
         net = ResNet(BasicBlock, [2,2,2,2])
@@ -119,7 +125,9 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=LEARNING_RATE, momentum=0.9)
 
-    writer = SummaryWriter(log_dir=ROOT_PATH)
+    if(ID!=''): writer_path = ROOT_PATH + '/' + ID + '/log'
+    else: writer_path = ROOT_PATH + '/log'
+    writer = SummaryWriter(log_dir=writer_path)
     trainloader = return_cifar10_training(dataset_path=DATASET_PATH, 
                                           download = False, mini_batch_size = MINI_BATCH_SIZE)
     global_step = 0
@@ -146,16 +154,21 @@ def main():
             accuracy = 100 * ((predicted == labels).sum().item()) / labels.size(0)         
             if(global_step % 5 == 0):          
                 writer.add_scalar('loss', loss, global_step)
-                writer.add_scalar('accuracy', accuracy, global_step)             
+                writer.add_scalar('accuracy', accuracy, global_step)            
             global_step += 1 #increasing the global step     
-
-        print('[%d, %5d] lr: %.5f; loss: %.5f; accuracy: %.5f' 
+            if(i % PRINT_RATE == 0): print('[%d, %5d] lr: %.5f; loss: %.5f; accuracy: %.3f' 
+                                           %(epoch, global_step, LEARNING_RATE, np.mean(loss_list), accuracy))
+        #Epoch finished
+        print('[%d, %5d] lr: %.5f; loss: %.5f; accuracy: %.5f'
                %(epoch, global_step, LEARNING_RATE, np.mean(loss_list), accuracy))
-        if(epoch==60 or epoch==120 or epoch==160):
-             save_checkpoint(net, epoch, NET_TYPE, ROOT_PATH)
+        if(epoch==0 or epoch==60 or epoch==120 or epoch==160):
+             if(ID!=''): checkpoint_path = ROOT_PATH + '/' + ID + '/checkpoint/'
+             else: checkpoint_path = ROOT_PATH + '/checkpoint/'
+             save_checkpoint(net, epoch, NET_TYPE, checkpoint_path)
              LEARNING_RATE = LEARNING_RATE * 0.2
              for g in optimizer.param_groups:
                  g['lr'] = LEARNING_RATE
+             print("[INFO] Learning rate: " + str(LEARNING_RATE))
              
 
 if __name__ == "__main__":
