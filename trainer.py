@@ -60,9 +60,9 @@ def return_cifar10_testing(dataset_path, download = False, mini_batch_size = 64)
     testloader = torch.utils.data.DataLoader(testset, batch_size=mini_batch_size, shuffle=False, num_workers=8)
     return testloader         
 
-def save_checkpoint(net, epoch, net_name, root_path):
+def save_checkpoint(net, epoch, learning_rate, net_name, root_path):
     time_string = strftime("%d%m%Y_%H%M%S", gmtime())
-    state = {'net': net.state_dict(), 'epoch': epoch, 'time': time_string}
+    state = {'net': net.state_dict(), 'epoch': epoch, 'lr': learning_rate, 'time': time_string}
     if not os.path.isdir(root_path): os.mkdir(root_path)
     print('[INFO] Saving checkpoint: ' + 'ckpt_'+str(time_string)+'_ep'+str(epoch)+'.t7')
     if(root_path.endswith('/')): root_path = root_path[:-1]
@@ -86,6 +86,7 @@ def main():
     DEVICE_ID = args.gpu
     LEARNING_RATE = args.lr
     TOT_EPOCHS = args.epochs
+    start_epoch = 0
     MINI_BATCH_SIZE = args.batch
     ROOT_PATH = args.root
     DATASET_PATH = args.data
@@ -126,6 +127,8 @@ def main():
         print('[INFO] Resuming from checkpoint: ' + str(args.resume))
         checkpoint = torch.load(str(args.resume))
         net.load_state_dict(checkpoint['net'])
+        start_epoch = checkpoint['epoch']
+        print('[INFO] Starting from epoch: ' + str(start_epoch))
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=LEARNING_RATE, momentum=0.9)
@@ -136,7 +139,7 @@ def main():
     trainloader = return_cifar10_training(dataset_path=DATASET_PATH, 
                                           download = False, mini_batch_size = MINI_BATCH_SIZE)
     global_step = 0
-    for epoch in range(0, TOT_EPOCHS):  #loop over the dataset multiple times
+    for epoch in range(start_epoch, TOT_EPOCHS):  #loop over the dataset multiple times
         loss_list = list()
         for i, data in enumerate(trainloader, 0):     
             # Zero the parameter gradients
@@ -171,12 +174,17 @@ def main():
              else: root_path = ROOT_PATH
              if(ID!=''): checkpoint_path = root_path + '/' + ID + '/checkpoint/'
              else: checkpoint_path = ROOT_PATH + '/checkpoint/'
-             save_checkpoint(net, epoch, NET_TYPE, checkpoint_path)
+             save_checkpoint(net, epoch, LEARNING_RATE, NET_TYPE, checkpoint_path)
              LEARNING_RATE = LEARNING_RATE * 0.2
              for g in optimizer.param_groups:
                  g['lr'] = LEARNING_RATE
              print("[INFO] Learning rate: " + str(LEARNING_RATE))
-             
+        if(epoch==TOT_EPOCHS-1):
+             if(ROOT_PATH.endswith('/')): root_path = ROOT_PATH[:-1]
+             else: root_path = ROOT_PATH
+             if(ID!=''): checkpoint_path = root_path + '/' + ID + '/checkpoint/'
+             else: checkpoint_path = ROOT_PATH + '/checkpoint/'
+             save_checkpoint(net, epoch, LEARNING_RATE, NET_TYPE, checkpoint_path)             
 
 if __name__ == "__main__":
     main() 
