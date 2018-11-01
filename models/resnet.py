@@ -11,8 +11,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import os
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-
 class AdartsBlock(nn.Module):
     expansion = 1
 
