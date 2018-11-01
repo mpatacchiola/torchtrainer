@@ -101,13 +101,14 @@ def main():
     print("[INFO] Learning rate: " + str(LEARNING_RATE))
     print("[INFO] Printing rate: " + str(PRINT_RATE))
     #torch.cuda.set_device(DEVICE_ID)
-    #os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-    #os.environ["CUDA_VISIBLE_DEVICES"]=str(DEVICE_ID)
+    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
+    os.environ["CUDA_VISIBLE_DEVICES"]=str(DEVICE_ID)
     print('[INFO] Is CUDA available: ' + str(torch.cuda.is_available()))
     print('[INFO] TOT available devices: ' + str(torch.cuda.device_count()))
     print('[INFO] Setting device: ' + str(DEVICE_ID))
-    device = torch.device('cuda:'+str(DEVICE_ID) if torch.cuda.is_available() else 'cpu')
-    print("[INFO] Torch is using device: " + str(torch.cuda.current_device()))
+    #device = torch.device('cuda:'+str(DEVICE_ID) if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    #print("[INFO] Torch is using device: " + str(torch.cuda.current_device()))
     ##Generate net
     if(NET_TYPE == 'resnet18'):
         net = ResNet(BasicBlock, [2,2,2,2])
