@@ -33,7 +33,6 @@ import torchvision
 import torchvision.transforms as transforms
 import torch.optim as optim
 from tensorboardX import SummaryWriter
-from models.resnet import ResNet, BasicBlock, Bottleneck
 # ArgParser
 import argparse
 from time import gmtime, strftime
@@ -112,6 +111,7 @@ def main():
     #print("[INFO] Torch is using device: " + str(torch.cuda.current_device()))
     ##Generate net
     if(NET_TYPE == 'resnet18'):
+        from models.resnet import ResNet, BasicBlock, Bottleneck
         net = ResNet(BasicBlock, [2,2,2,2])
     elif(NET_TYPE == 'resnet34'):
         net = ResNet(BasicBlock, [3, 4, 6, 3])
@@ -121,6 +121,12 @@ def main():
         net = ResNet(Bottleneck, [3,4,23,3])
     elif(NET_TYPE == 'resnet152'):
         net = ResNet(Bottleneck, [3,8,36,3])
+    elif(NET_TYPE == 'mor18'):
+        from models.mor import ResNet, BasicBlock, Bottleneck
+        net = ResNet(BasicBlock, [2,2,2,2])
+    elif(NET_TYPE == 'mor34'):
+        from models.mor import ResNet, BasicBlock, Bottleneck
+        net = ResNet(BasicBlock, [3, 4, 6, 3])
     else:
         raise ValueError('[ERROR] the architecture type ' + str(NET_TYPE) + ' is unknown.') 
     print("[INFO] Architecture: " + str(NET_TYPE))          
@@ -153,7 +159,10 @@ def main():
             outputs = net(inputs)   
             #TODO Estimate regularizer          
             # Estimate loss
-            loss = criterion(outputs, labels)
+            if(net.return_regularizer()):
+                loss = criterion(outputs, labels) + 0.1 * net.return_regularizer()
+            else:
+                loss = criterion(outputs, labels)
             loss_list.append(loss.item())
             # Backward
             loss.backward()
