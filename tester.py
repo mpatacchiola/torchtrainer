@@ -76,16 +76,19 @@ def main():
         print('[INFO] Resuming from checkpoint: ' + str(args.resume))
         checkpoint = torch.load(str(args.resume))
         net.load_state_dict(checkpoint['net'])
-        start_epoch = checkpoint['epoch']
-        print('[INFO] Starting from epoch: ' + str(start_epoch))
-        
+    else:
+        raise ValueError('[ERROR] You must use --resume to load a checkpoint in order to test the model!')        
 
     #Load the test set
-    testloader = return_cifar10_testing('./dataset', download=False, mini_batch_size=1000)
+    testloader = return_cifar10_testing(DATASET_PATH, download=False, mini_batch_size=1000)
+    classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+    
+    #Check
     dataiter = iter(testloader)
     images, labels = dataiter.next()
     images, labels = images.to(device), labels.to(device)
-    outputs = net(images)
+    with torch.no_grad():
+        outputs = net(images)
     _, predicted = torch.max(outputs, 1)
     print('Predicted: ', ' '.join('%5s' % classes[predicted[j]] for j in range(4)))
 
@@ -103,7 +106,6 @@ def main():
     print('Accuracy of the network on the 10000 test images: %.3f %%' % (100 * correct / total))
 
     #Per-Class accuracy
-    classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
     class_correct = list(0. for i in range(10))
     class_total = list(0. for i in range(10))
     with torch.no_grad():
@@ -119,3 +121,7 @@ def main():
                 class_total[label] += 1
     for i in range(10):
         print('Accuracy of %5s : %.3f %%' % (classes[i], 100 * class_correct[i] / class_total[i]))
+        
+        
+if __name__ == "__main__":
+    main() 

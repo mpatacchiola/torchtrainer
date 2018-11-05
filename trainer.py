@@ -101,7 +101,8 @@ def main():
     print("[INFO] Learning rate: " + str(LEARNING_RATE))
     print("[INFO] Printing rate: " + str(PRINT_RATE))
     #torch.cuda.set_device(DEVICE_ID)
-    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
+    #ATTENTION: os.environment must be called before any torch.cuda call
+    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"]=str(DEVICE_ID)
     print('[INFO] Is CUDA available: ' + str(torch.cuda.is_available()))
     print('[INFO] TOT available devices: ' + str(torch.cuda.device_count()))
@@ -128,7 +129,7 @@ def main():
         print('[INFO] Resuming from checkpoint: ' + str(args.resume))
         checkpoint = torch.load(str(args.resume))
         net.load_state_dict(checkpoint['net'])
-        start_epoch = checkpoint['epoch']
+        start_epoch = checkpoint['epoch'] + 1
         print('[INFO] Starting from epoch: ' + str(start_epoch))
 
     criterion = nn.CrossEntropyLoss()
