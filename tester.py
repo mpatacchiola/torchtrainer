@@ -90,6 +90,7 @@ def main():
     with torch.no_grad():
         outputs = net(images)
     _, predicted = torch.max(outputs, 1)
+    print('GroundTruth: ', ' '.join('%5s' % classes[labels[j]] for j in range(4)))
     print('Predicted: ', ' '.join('%5s' % classes[predicted[j]] for j in range(4)))
 
     #Whole dataset accuracy
