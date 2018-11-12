@@ -38,8 +38,7 @@ import argparse
 from time import gmtime, strftime
 
 
-def return_cifar10_training(dataset_path, download = False, mini_batch_size = 64):
-
+def return_cifar10_training(dataset_path, download=False, mini_batch_size=64):
     transform = transforms.Compose([transforms.RandomHorizontalFlip(),
                                     transforms.RandomCrop(size=[32,32], padding=4),
                                     transforms.ToTensor(),
@@ -51,13 +50,17 @@ def return_cifar10_training(dataset_path, download = False, mini_batch_size = 64
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=mini_batch_size, shuffle=True, num_workers=8)
     return trainloader
 
-def return_cifar10_testing(dataset_path, download = False, mini_batch_size = 64):
-    transform = transforms.Compose([transforms.ToTensor(),
+def return_cifar100_training(dataset_path, download=False, mini_batch_size = 64):
+    transform = transforms.Compose([transforms.RandomHorizontalFlip(),
+                                    transforms.RandomCrop(size=[32,32], padding=4),
+                                    transforms.ToTensor(),
                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-    testset = torchvision.datasets.CIFAR10(root=dataset_path, train=False,
-                                           download=download, transform=transform)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=mini_batch_size, shuffle=False, num_workers=8)
-    return testloader         
+    #transform = transforms.Compose([transforms.ToTensor(),
+    #                                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    trainset = torchvision.datasets.CIFAR100(root=dataset_path, train=True,
+                                            download=download, transform=transform)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=mini_batch_size, shuffle=True, num_workers=8)
+    return trainloader
 
 def save_checkpoint(net, epoch, learning_rate, net_name, root_path):
     time_string = strftime("%d%m%Y_%H%M%S", gmtime())
