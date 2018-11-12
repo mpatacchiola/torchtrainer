@@ -98,6 +98,8 @@ class ResNet(nn.Module):
         #conv5: 1x1
         self.hiddeng = nn.Linear(in_features=128, out_features=128, bias=True)
         self.linearg = nn.Linear(in_features=128, out_features=sum(num_blocks), bias=True)
+        #torch.nn.init.constant_(self.linearg.bias, val=1.0) #init the output to 'carry' behaviour
+        #torch.nn.init.uniform_(self.linearg.bias, a=-1.5, b=1.5)
         
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
@@ -148,11 +150,18 @@ class ResNet(nn.Module):
         return out
         
     def return_regularizer(self):
-        return torch.mean(self.gate_output)
+        #L2 penalty
+        target = -0.5
+        return torch.mean(torch.pow(torch.add(self.gate_output,target), 2))
         
     def return_histograms(self):
         return self.histograms_list
-        
+
+    def return_performance(self):
+        used_blocks = torch.sum(torch.round(self.gate_output), dim=1)
+        mean_used_blocks = torch.mean(used_blocks).cpu().numpy()
+        std_used_blocks = torch.std(used_blocks).cpu().numpy()
+        return [mean_used_blocks, std_used_blocks]
         
 def ResNet18():
     return ResNet(BasicBlock, [2,2,2,2])

@@ -172,8 +172,8 @@ def main():
             # Forward
             outputs = net(inputs)        
             # Estimate loss
-            if(net.return_regularizer()):
-                loss = criterion(outputs, labels) + 0.1 * net.return_regularizer()
+            if(hasattr(net, 'return_regularizer')):
+                loss = criterion(outputs, labels) + 0.01 * net.return_regularizer()
             else:
                 loss = criterion(outputs, labels)
             loss_list.append(loss.item())
@@ -187,9 +187,9 @@ def main():
             if(global_step % 5 == 0):          
                 writer.add_scalar('loss', loss, global_step)
                 writer.add_scalar('accuracy', accuracy, global_step)
-                if(net.return_regularizer()):
+                if(hasattr(net, 'return_regularizer')):
                     writer.add_scalar('regularizer', net.return_regularizer(), global_step)
-                if(net.return_histograms()):
+                if(hasattr(net, 'return_histograms')):
                     for i, histogram in enumerate(net.return_histograms()):
                         writer.add_histogram('gate_' + str(i), histogram, global_step)   
             global_step += 1 #increasing the global step     

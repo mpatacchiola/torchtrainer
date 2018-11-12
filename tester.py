@@ -59,14 +59,19 @@ def main():
     #print("[INFO] Torch is using device: " + str(torch.cuda.current_device()))
     ##Generate net
     if(NET_TYPE == 'resnet18'):
+        from models.resnet import ResNet, BasicBlock, Bottleneck
         net = ResNet(BasicBlock, [2,2,2,2])
     elif(NET_TYPE == 'resnet34'):
+        from models.resnet import ResNet, BasicBlock, Bottleneck
         net = ResNet(BasicBlock, [3, 4, 6, 3])
     elif(NET_TYPE == 'resnet50'):
+        from models.resnet import ResNet, BasicBlock, Bottleneck
         net = ResNet(Bottleneck, [3,4,6,3])
     elif(NET_TYPE == 'resnet101'):
+        from models.resnet import ResNet, BasicBlock, Bottleneck
         net = ResNet(Bottleneck, [3,4,23,3])
     elif(NET_TYPE == 'resnet152'):
+        from models.resnet import ResNet, BasicBlock, Bottleneck
         net = ResNet(Bottleneck, [3,8,36,3])
     elif(NET_TYPE == 'mor18'):
         from models.mor import ResNet, BasicBlock, Bottleneck
@@ -74,6 +79,12 @@ def main():
     elif(NET_TYPE == 'mor34'):
         from models.mor import ResNet, BasicBlock, Bottleneck
         net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=10, round_g=True)
+    elif(NET_TYPE == 'moround18'):
+        from models.mor import ResNet, BasicBlock, Bottleneck
+        net = ResNet(BasicBlock, [2,2,2,2], num_classes=10, round_g=True)
+    elif(NET_TYPE == 'moround34'):
+        from models.mor import ResNet, BasicBlock, Bottleneck
+        net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=10, round_g=True) 
     else:
         raise ValueError('[ERROR] the architecture type ' + str(NET_TYPE) + ' is unknown.') 
     print("[INFO] Architecture: " + str(NET_TYPE))          
@@ -102,6 +113,7 @@ def main():
     #Whole dataset accuracy
     correct = 0
     total = 0
+    performance = 0
     with torch.no_grad():
         for data in testloader:
             images, labels = data
@@ -110,8 +122,11 @@ def main():
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+            if(hasattr(net, 'return_performance')):
+                performance = net.return_performance()
     print('Accuracy of the network on the 10000 test images: %.3f %%' % (100 * correct / total))
-
+    if(hasattr(net, 'return_performance')):
+        print('Performance: ' + str(performance))
     #Per-Class accuracy
     class_correct = list(0. for i in range(10))
     class_total = list(0. for i in range(10))
