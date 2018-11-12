@@ -117,20 +117,25 @@ class ResNet(nn.Module):
         #ResNet output
         out = F.relu(self.bn1(self.conv1(x)))
         block_counter = 0
+        self.histograms_list = list()
         for block in self.layer1:
-            g = self.gate_output[:,block_counter] #mpatacchiola          
+            g = self.gate_output[:,block_counter] #mpatacchiola
+            self.histograms_list.append(g.squeeze())       
             out = block(out, g)
-            block_counter += 1       
+            block_counter += 1  
         for block in self.layer2:
-            g = self.gate_output[:,block_counter] #mpatacchiola          
+            g = self.gate_output[:,block_counter] #mpatacchiola 
+            self.histograms_list.append(g.squeeze())         
             out = block(out, g)
             block_counter += 1  
         for block in self.layer3:
-            g = self.gate_output[:,block_counter] #mpatacchiola          
+            g = self.gate_output[:,block_counter] #mpatacchiola
+            self.histograms_list.append(g.squeeze())      
             out = block(out, g)
             block_counter += 1  
         for block in self.layer4:
-            g = self.gate_output[:,block_counter] #mpatacchiola           
+            g = self.gate_output[:,block_counter] #mpatacchiola
+            self.histograms_list.append(g.squeeze())          
             out = block(out, g)
             block_counter += 1  
         out = F.avg_pool2d(out, 4)
@@ -139,9 +144,12 @@ class ResNet(nn.Module):
         return out
         
     def return_regularizer(self):
-        torch.mean(self.gate_output)
+        return torch.mean(self.gate_output)
         
-
+    def return_histograms(self):
+        return self.histograms_list
+        
+        
 def ResNet18():
     return ResNet(BasicBlock, [2,2,2,2])
 

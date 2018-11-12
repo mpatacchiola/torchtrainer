@@ -114,12 +114,16 @@ def main():
         from models.resnet import ResNet, BasicBlock, Bottleneck
         net = ResNet(BasicBlock, [2,2,2,2])
     elif(NET_TYPE == 'resnet34'):
+        from models.resnet import ResNet, BasicBlock, Bottleneck
         net = ResNet(BasicBlock, [3, 4, 6, 3])
     elif(NET_TYPE == 'resnet50'):
+        from models.resnet import ResNet, BasicBlock, Bottleneck
         net = ResNet(Bottleneck, [3,4,6,3])
     elif(NET_TYPE == 'resnet101'):
+        from models.resnet import ResNet, BasicBlock, Bottleneck
         net = ResNet(Bottleneck, [3,4,23,3])
     elif(NET_TYPE == 'resnet152'):
+        from models.resnet import ResNet, BasicBlock, Bottleneck
         net = ResNet(Bottleneck, [3,8,36,3])
     elif(NET_TYPE == 'mor18'):
         from models.mor import ResNet, BasicBlock, Bottleneck
@@ -141,8 +145,9 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=LEARNING_RATE, momentum=0.9)
 
-    if(ID!=''): writer_path = ROOT_PATH + '/' + ID + '/log'
-    else: writer_path = ROOT_PATH + '/log'
+    time_string = strftime("%d%m%Y_%H%M%S", gmtime())
+    if(ID!=''): writer_path = ROOT_PATH + '/' + ID + '/log/' + time_string
+    else: writer_path = ROOT_PATH + '/log' + time_string
     writer = SummaryWriter(log_dir=writer_path)
     trainloader = return_cifar10_training(dataset_path=DATASET_PATH, 
                                           download = False, mini_batch_size = MINI_BATCH_SIZE)
@@ -156,8 +161,7 @@ def main():
             inputs, labels = data
             inputs, labels = inputs.to(device), labels.to(device)
             # Forward
-            outputs = net(inputs)   
-            #TODO Estimate regularizer          
+            outputs = net(inputs)        
             # Estimate loss
             if(net.return_regularizer()):
                 loss = criterion(outputs, labels) + 0.1 * net.return_regularizer()
@@ -173,7 +177,12 @@ def main():
             accuracy = 100 * ((predicted == labels).sum().item()) / labels.size(0)         
             if(global_step % 5 == 0):          
                 writer.add_scalar('loss', loss, global_step)
-                writer.add_scalar('accuracy', accuracy, global_step)            
+                writer.add_scalar('accuracy', accuracy, global_step)
+                if(net.return_regularizer()):
+                    writer.add_scalar('regularizer', net.return_regularizer(), global_step)
+                if(net.return_histograms()):
+                    for i, histogram in enumerate(net.return_histograms()):
+                        writer.add_histogram('gate_' + str(i), histogram, global_step)   
             global_step += 1 #increasing the global step     
             if(i % PRINT_RATE == 0): print('[%d, %5d] lr: %.5f; loss: %.5f; accuracy: %.3f' 
                                            %(epoch, global_step, LEARNING_RATE, np.mean(loss_list), accuracy))
