@@ -24,11 +24,14 @@ class BasicBlock(nn.Module):
                 nn.BatchNorm2d(self.expansion*planes)
             )
 
-    def forward(self, x, g):
+    def forward(self, x, g, round_g=False):
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.bn2(self.conv2(out))
         g = torch.reshape(g, (g.size(0), 1, 1, 1))
-        out = out * g #mpatacchiola
+        if(round_g):
+            out = out * torch.round(g) #mpatacchiola
+        else:
+            out = out * g #mpatacchiola
         out += self.shortcut(x)
         out = F.relu(out)
         return out
@@ -63,9 +66,10 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(self, block, num_blocks, num_classes=10, round_g=False):
         super(ResNet, self).__init__()
         self.global_id = 0 #mpatacchiola
+        self.round_g = round_g
         self.in_planes = 64
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
@@ -121,22 +125,22 @@ class ResNet(nn.Module):
         for block in self.layer1:
             g = self.gate_output[:,block_counter] #mpatacchiola
             self.histograms_list.append(g.squeeze())       
-            out = block(out, g)
+            out = block(out, g, self.round_g)
             block_counter += 1  
         for block in self.layer2:
             g = self.gate_output[:,block_counter] #mpatacchiola 
             self.histograms_list.append(g.squeeze())         
-            out = block(out, g)
+            out = block(out, g, self.round_g)
             block_counter += 1  
         for block in self.layer3:
             g = self.gate_output[:,block_counter] #mpatacchiola
             self.histograms_list.append(g.squeeze())      
-            out = block(out, g)
+            out = block(out, g, self.round_g)
             block_counter += 1  
         for block in self.layer4:
             g = self.gate_output[:,block_counter] #mpatacchiola
             self.histograms_list.append(g.squeeze())          
-            out = block(out, g)
+            out = block(out, g, self.round_g)
             block_counter += 1  
         out = F.avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
