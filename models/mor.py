@@ -56,10 +56,15 @@ class Bottleneck(nn.Module):
                 nn.BatchNorm2d(self.expansion*planes)
             )
 
-    def forward(self, x):
+    def forward(self, x, g, round_g=False):
         out = F.relu(self.bn1(self.conv1(x)))
         out = F.relu(self.bn2(self.conv2(out)))
         out = self.bn3(self.conv3(out))
+        g = torch.reshape(g, (g.size(0), 1, 1, 1))
+        if(round_g):
+            out = out * torch.round(g) #mpatacchiola
+        else:
+            out = out * g #mpatacchiola
         out += self.shortcut(x)
         out = F.relu(out)
         return out

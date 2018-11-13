@@ -84,7 +84,10 @@ def main():
         net = ResNet(BasicBlock, [2,2,2,2], num_classes=10, round_g=True)
     elif(NET_TYPE == 'moround34'):
         from models.mor import ResNet, BasicBlock, Bottleneck
-        net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=10, round_g=True) 
+        net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=10, round_g=True)
+    elif(NET_TYPE == 'moround101'):
+        from models.mor import ResNet, BasicBlock, Bottleneck
+        net = ResNet(Bottleneck, [3,4,23,3], num_classes=10, round_g=True) 
     else:
         raise ValueError('[ERROR] the architecture type ' + str(NET_TYPE) + ' is unknown.') 
     print("[INFO] Architecture: " + str(NET_TYPE))          
