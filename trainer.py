@@ -111,6 +111,7 @@ def main():
     print('[INFO] Setting device: ' + str(DEVICE_ID))
     #device = torch.device('cuda:'+str(DEVICE_ID) if torch.cuda.is_available() else 'cpu')
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    #device = torch.device('cpu')
     #print("[INFO] Torch is using device: " + str(torch.cuda.current_device()))
     ##Generate net
     if(NET_TYPE == 'resnet18'):
@@ -142,7 +143,10 @@ def main():
         net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=10, round_g=True)
     elif(NET_TYPE == 'moround101'):
         from models.mor import ResNet, BasicBlock, Bottleneck
-        net = ResNet(Bottleneck, [3,4,23,3], num_classes=10, round_g=True) 
+        net = ResNet(Bottleneck, [3,4,23,3], num_classes=10, round_g=True)
+    elif(NET_TYPE == 'rmor34'):
+        from models.rmor import ResNet, BasicBlock, Bottleneck
+        net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=10, round_g=False)
     else:
         raise ValueError('[ERROR] the architecture type ' + str(NET_TYPE) + ' is unknown.') 
     print("[INFO] Architecture: " + str(NET_TYPE))          
@@ -164,6 +168,8 @@ def main():
     trainloader = return_cifar10_training(dataset_path=DATASET_PATH, 
                                           download = False, mini_batch_size = MINI_BATCH_SIZE)
     global_step = 0
+    gumbel_tau_array = np.linspace(start=1.0, stop=0.01, num=TOT_EPOCHS-10, endpoint=True)
+    gumbel_tau_array = np.hstack((gumbel_tau_array, np.full(10+1, 0.01)))
     for epoch in range(start_epoch, TOT_EPOCHS):  #loop over the dataset multiple times
         loss_list = list()
         for i, data in enumerate(trainloader, 0):     
@@ -173,10 +179,12 @@ def main():
             inputs, labels = data
             inputs, labels = inputs.to(device), labels.to(device)
             # Forward
-            outputs = net(inputs)        
+            outputs = net(inputs, gumbel_tau=gumbel_tau_array[epoch])        
             # Estimate loss
             if(hasattr(net, 'return_regularizer')):
                 loss = criterion(outputs, labels) + 0.01 * net.return_regularizer()
+            elif(hasattr(net, 'return_loss')):
+                loss = criterion(outputs, labels) + 0.1 * net.return_loss(device)
             else:
                 loss = criterion(outputs, labels)
             loss_list.append(loss.item())
@@ -190,11 +198,15 @@ def main():
             if(global_step % 5 == 0):          
                 writer.add_scalar('loss', loss, global_step)
                 writer.add_scalar('accuracy', accuracy, global_step)
+                writer.add_scalar('gumbel_tau', gumbel_tau_array[epoch])
                 if(hasattr(net, 'return_regularizer')):
                     writer.add_scalar('regularizer', net.return_regularizer(), global_step)
                 if(hasattr(net, 'return_histograms')):
                     for i, histogram in enumerate(net.return_histograms()):
-                        writer.add_histogram('gate_' + str(i), histogram, global_step)   
+                        writer.add_histogram('gate_' + str(i), histogram, global_step)
+                if(hasattr(net, 'return_activity')):
+                    activity = net.return_activity()
+                    writer.add_histogram('activity', activity, global_step)
             global_step += 1 #increasing the global step     
             if(i % PRINT_RATE == 0): print('[%d, %5d] lr: %.5f; loss: %.5f; accuracy: %.3f' 
                                            %(epoch, global_step, LEARNING_RATE, np.mean(loss_list), accuracy))
