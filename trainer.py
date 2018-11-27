@@ -198,7 +198,7 @@ def main():
             if(global_step % 5 == 0):          
                 writer.add_scalar('loss', loss, global_step)
                 writer.add_scalar('accuracy', accuracy, global_step)
-                writer.add_scalar('gumbel_tau', gumbel_tau_array[epoch])
+                writer.add_scalar('gumbel_tau', gumbel_tau_array[epoch], global_step)
                 if(hasattr(net, 'return_regularizer')):
                     writer.add_scalar('regularizer', net.return_regularizer(), global_step)
                 if(hasattr(net, 'return_histograms')):
