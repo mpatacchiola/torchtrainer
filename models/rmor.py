@@ -56,15 +56,12 @@ class Bottleneck(nn.Module):
                 nn.BatchNorm2d(self.expansion*planes)
             )
 
-    def forward(self, x, g, round_g=False):
+    def forward(self, x, g):
         out = F.relu(self.bn1(self.conv1(x)))
         out = F.relu(self.bn2(self.conv2(out)))
         out = self.bn3(self.conv3(out))
         g = torch.reshape(g, (g.size(0), 1, 1, 1))
-        if(round_g):
-            out = out * torch.round(g) #mpatacchiola
-        else:
-            out = out * g #mpatacchiola
+        out = out * g #mpatacchiola
         out += self.shortcut(x)
         out = F.relu(out)
         return out
@@ -112,7 +109,7 @@ class ResNet(nn.Module):
         #torch.nn.init.constant_(self.linearg.bias, val=1.0) #init the output to 'carry' behaviour
         #torch.nn.init.uniform_(self.linearg.bias, a=-1.5, b=1.5)
         
-        self.loss = nn.BCELoss(reduction='elementwise_mean')
+        self.loss = nn.BCELoss(reduction='sum') #'elementwise_mean'
         
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
@@ -122,7 +119,7 @@ class ResNet(nn.Module):
             self.in_planes = planes * block.expansion
         return nn.Sequential(*layers)
 
-    def forward(self, x, gumbel_tau, gumbel_hard=False):
+    def forward(self, x, gumbel_tau):
         #Gate output
         outg = F.relu(self.bng1(self.convg1(x)))
         outg = F.relu(self.bng2(self.convg2(outg)))
@@ -135,7 +132,7 @@ class ResNet(nn.Module):
         for linear_local in self.linearg_list:
             outg_local = linear_local(outg)
             outg_local = F.gumbel_softmax(outg_local, tau=gumbel_tau, 
-                                          hard=gumbel_hard, eps=1e-10)
+                                          hard=self.round_g, eps=1e-10)
             self.gate_output_list.append(outg_local[:, 0])
 
         #ResNet output
@@ -146,25 +143,25 @@ class ResNet(nn.Module):
             g = self.gate_output_list[block_counter] #mpatacchiola
             #g = self.gate_output[:,block_counter] #mpatacchiola
             self.histograms_list.append(g.squeeze())       
-            out = block(out, g, self.round_g)
+            out = block(out, g)
             block_counter += 1  
         for block in self.layer2:
             g = self.gate_output_list[block_counter] #mpatacchiola
             #g = self.gate_output[:,block_counter] #mpatacchiola
             self.histograms_list.append(g.squeeze())         
-            out = block(out, g, self.round_g)
+            out = block(out, g)
             block_counter += 1  
         for block in self.layer3:
             g = self.gate_output_list[block_counter] #mpatacchiola
             #g = self.gate_output[:,block_counter] #mpatacchiola
             self.histograms_list.append(g.squeeze())      
-            out = block(out, g, self.round_g)
+            out = block(out, g)
             block_counter += 1  
         for block in self.layer4:
             g = self.gate_output_list[block_counter] #mpatacchiola
             #g = self.gate_output[:,block_counter] #mpatacchiola
             self.histograms_list.append(g.squeeze())          
-            out = block(out, g, self.round_g)
+            out = block(out, g)
             block_counter += 1  
         out = F.avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
@@ -172,10 +169,13 @@ class ResNet(nn.Module):
         return out
         
     def return_loss(self, device):
-        target = 0.5
-        gate_output_stack = torch.stack(self.gate_output_list, dim=1)
-        target_matrix = torch.empty(gate_output_stack.size()).to(device)
-        target_matrix.fill_(target)
+        target = 0.75
+        gate_output_stack = torch.stack(self.gate_output_list, dim=1) #size[128, 16]
+        gate_output_stack = torch.mean(gate_output_stack, dim=0) #size[16]
+        target_matrix = torch.empty(gate_output_stack.size()).to(device) #size[16]
+        target_matrix.fill_(target) #size[16]
+        #print(gate_output_stack.size())
+        #print(target_matrix.size())
         output = self.loss(gate_output_stack, target_matrix)
         return output
        

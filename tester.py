@@ -33,7 +33,7 @@ def main():
     parser.add_argument('--gpu', default=0, type=int, help='GPU id')
     parser.add_argument('--id', default='', type=str, help='experiment ID')
     parser.add_argument('--arch', default='resnet34', type=str, help='architecture type: resnet18/152')
-    parser.add_argument('--batch', default=128, type=int, help='mini-batch size')
+    parser.add_argument('--batch', default=1000, type=int, help='mini-batch size')
     parser.add_argument('--resume', '-r', type=str, help='resume from checkpoint')
     parser.add_argument('--root', default='./', type=str, help='root path')
     parser.add_argument('--data', default='./', type=str, help='data path')
@@ -87,7 +87,10 @@ def main():
         net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=10, round_g=True)
     elif(NET_TYPE == 'moround101'):
         from models.mor import ResNet, BasicBlock, Bottleneck
-        net = ResNet(Bottleneck, [3,4,23,3], num_classes=10, round_g=True) 
+        net = ResNet(Bottleneck, [3,4,23,3], num_classes=10, round_g=True)
+    elif(NET_TYPE == 'rmor34'):
+        from models.rmor import ResNet, BasicBlock, Bottleneck
+        net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=10, round_g=True)
     else:
         raise ValueError('[ERROR] the architecture type ' + str(NET_TYPE) + ' is unknown.') 
     print("[INFO] Architecture: " + str(NET_TYPE))          
@@ -108,7 +111,10 @@ def main():
     images, labels = dataiter.next()
     images, labels = images.to(device), labels.to(device)
     with torch.no_grad():
-        outputs = net(images)
+       if(NET_TYPE == 'rmor34'):
+           outputs = net(images, gumbel_tau=0.01)
+       else:
+           outputs = net(images)
     _, predicted = torch.max(outputs, 1)
     print('GroundTruth: ', ' '.join('%5s' % classes[labels[j]] for j in range(4)))
     print('Predicted: ', ' '.join('%5s' % classes[predicted[j]] for j in range(4)))
@@ -121,13 +127,16 @@ def main():
         for data in testloader:
             images, labels = data
             images, labels = images.to(device), labels.to(device)
-            outputs = net(images)
+            if(NET_TYPE == 'rmor34'):
+                outputs = net(images, gumbel_tau=0.01)
+            else:
+                outputs = net(images)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
             if(hasattr(net, 'return_performance')):
                 performance = net.return_performance()
-    print('Accuracy of the network on the 10000 test images: %.3f %%' % (100 * correct / total))
+    print('Accuracy of the network on the 10000 test images: %.5f %%' % (100 * correct / total))
     if(hasattr(net, 'return_performance')):
         print('Performance: ' + str(performance))
     #Per-Class accuracy
@@ -137,7 +146,10 @@ def main():
         for data in testloader:
             images, labels = data
             images, labels = images.to(device), labels.to(device)
-            outputs = net(images)
+            if(NET_TYPE == 'rmor34'):
+                outputs = net(images, gumbel_tau=0.01)
+            else:
+                outputs = net(images)
             _, predicted = torch.max(outputs, 1)
             c = (predicted == labels).squeeze()
             for i in range(4):

@@ -160,6 +160,7 @@ def main():
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=LEARNING_RATE, momentum=0.9)
+    #optimizer =  optim.Adam(net.parameters(), lr=LEARNING_RATE)
 
     time_string = strftime("%d%m%Y_%H%M%S", gmtime())
     if(ID!=''): writer_path = ROOT_PATH + '/' + ID + '/log/' + time_string
@@ -168,8 +169,8 @@ def main():
     trainloader = return_cifar10_training(dataset_path=DATASET_PATH, 
                                           download = False, mini_batch_size = MINI_BATCH_SIZE)
     global_step = 0
-    gumbel_tau_array = np.linspace(start=1.0, stop=0.01, num=TOT_EPOCHS-10, endpoint=True)
-    gumbel_tau_array = np.hstack((gumbel_tau_array, np.full(10+1, 0.01)))
+    gumbel_tau_array = np.linspace(start=0.9, stop=0.01, num=TOT_EPOCHS-5, endpoint=True)
+    gumbel_tau_array = np.hstack((gumbel_tau_array, np.full(5+1, 0.01)))
     for epoch in range(start_epoch, TOT_EPOCHS):  #loop over the dataset multiple times
         loss_list = list()
         for i, data in enumerate(trainloader, 0):     
@@ -179,12 +180,13 @@ def main():
             inputs, labels = data
             inputs, labels = inputs.to(device), labels.to(device)
             # Forward
-            outputs = net(inputs, gumbel_tau=gumbel_tau_array[epoch])        
+            outputs = net(inputs)
+            #outputs = net(inputs, gumbel_tau=gumbel_tau_array[epoch])        
             # Estimate loss
             if(hasattr(net, 'return_regularizer')):
                 loss = criterion(outputs, labels) + 0.01 * net.return_regularizer()
             elif(hasattr(net, 'return_loss')):
-                loss = criterion(outputs, labels) + 0.1 * net.return_loss(device)
+                loss = criterion(outputs, labels) + 1.0 * net.return_loss(device)
             else:
                 loss = criterion(outputs, labels)
             loss_list.append(loss.item())
@@ -198,7 +200,7 @@ def main():
             if(global_step % 5 == 0):          
                 writer.add_scalar('loss', loss, global_step)
                 writer.add_scalar('accuracy', accuracy, global_step)
-                writer.add_scalar('gumbel_tau', gumbel_tau_array[epoch], global_step)
+                #writer.add_scalar('gumbel_tau', gumbel_tau_array[epoch], global_step)
                 if(hasattr(net, 'return_regularizer')):
                     writer.add_scalar('regularizer', net.return_regularizer(), global_step)
                 if(hasattr(net, 'return_histograms')):
