@@ -84,6 +84,7 @@ def main():
     parser.add_argument('--root', default='./', type=str, help='root path')
     parser.add_argument('--data', default='./', type=str, help='data path')
     parser.add_argument('--prate', default=100, type=int, help='print-rate on terminal')
+    parser.add_argument('--dataset', default='cifar10', type=str, help='dataset type: cifar10, cifar100')
     args = parser.parse_args()
     DEVICE_ID = args.gpu
     LEARNING_RATE = args.lr
@@ -113,6 +114,12 @@ def main():
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     #device = torch.device('cpu')
     #print("[INFO] Torch is using device: " + str(torch.cuda.current_device()))
+    if(args.dataset == "cifar10"):
+        TOT_CLASSES = 10
+    elif(args.dataset == "cifar100"):
+        TOT_CLASSES = 100
+    else:
+        raise ValueError('[ERROR] the dataset ' + args.dataset + ' is unknown.') 
     ##Generate net
     if(NET_TYPE == 'resnet18'):
         from models.resnet import ResNet, BasicBlock, Bottleneck
@@ -137,16 +144,16 @@ def main():
         net = ResNet(BasicBlock, [3, 4, 6, 3])
     elif(NET_TYPE == 'moround18'):
         from models.mor import ResNet, BasicBlock, Bottleneck
-        net = ResNet(BasicBlock, [2,2,2,2], num_classes=10, round_g=True)
+        net = ResNet(BasicBlock, [2,2,2,2], num_classes=TOT_CLASSES, round_g=True)
     elif(NET_TYPE == 'moround34'):
         from models.mor import ResNet, BasicBlock, Bottleneck
-        net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=10, round_g=True)
+        net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=TOT_CLASSES, round_g=True)
     elif(NET_TYPE == 'moround101'):
         from models.mor import ResNet, BasicBlock, Bottleneck
-        net = ResNet(Bottleneck, [3,4,23,3], num_classes=10, round_g=True)
+        net = ResNet(Bottleneck, [3,4,23,3], num_classes=TOT_CLASSES, round_g=True)
     elif(NET_TYPE == 'rmor34'):
         from models.rmor import ResNet, BasicBlock, Bottleneck
-        net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=10, round_g=False)
+        net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=TOT_CLASSES, round_g=False)
     else:
         raise ValueError('[ERROR] the architecture type ' + str(NET_TYPE) + ' is unknown.') 
     print("[INFO] Architecture: " + str(NET_TYPE))          
@@ -166,8 +173,15 @@ def main():
     if(ID!=''): writer_path = ROOT_PATH + '/' + ID + '/log/' + time_string
     else: writer_path = ROOT_PATH + '/log' + time_string
     writer = SummaryWriter(log_dir=writer_path)
-    trainloader = return_cifar10_training(dataset_path=DATASET_PATH, 
-                                          download = False, mini_batch_size = MINI_BATCH_SIZE)
+    if(args.dataset == "cifar10"):
+        trainloader = return_cifar10_training(dataset_path=DATASET_PATH, 
+                                              download = False, mini_batch_size = MINI_BATCH_SIZE)
+    elif(args.dataset == "cifar100"):
+        trainloader = return_cifar100_training(dataset_path=DATASET_PATH, 
+                                                download = False, mini_batch_size = MINI_BATCH_SIZE)
+    else:
+        raise ValueError('[ERROR] the dataset ' + args.dataset + ' is unknown.') 
+    print('[INFO] Loaded dataset: ' + args.dataset)   
     global_step = 0
     gumbel_tau_array = np.linspace(start=0.9, stop=0.01, num=TOT_EPOCHS-5, endpoint=True)
     gumbel_tau_array = np.hstack((gumbel_tau_array, np.full(5+1, 0.01)))
@@ -180,8 +194,11 @@ def main():
             inputs, labels = data
             inputs, labels = inputs.to(device), labels.to(device)
             # Forward
-            outputs = net(inputs)
-            #outputs = net(inputs, gumbel_tau=gumbel_tau_array[epoch])        
+            
+            if('rmor' in NET_TYPE):
+                outputs = net(inputs, gumbel_tau=gumbel_tau_array[epoch])
+            else:
+                outputs = net(inputs)     
             # Estimate loss
             if(hasattr(net, 'return_regularizer')):
                 loss = criterion(outputs, labels) + 0.01 * net.return_regularizer()
@@ -200,7 +217,8 @@ def main():
             if(global_step % 5 == 0):          
                 writer.add_scalar('loss', loss, global_step)
                 writer.add_scalar('accuracy', accuracy, global_step)
-                #writer.add_scalar('gumbel_tau', gumbel_tau_array[epoch], global_step)
+                if('rmor' in NET_TYPE):
+                    writer.add_scalar('gumbel_tau', gumbel_tau_array[epoch], global_step)
                 if(hasattr(net, 'return_regularizer')):
                     writer.add_scalar('regularizer', net.return_regularizer(), global_step)
                 if(hasattr(net, 'return_histograms')):
