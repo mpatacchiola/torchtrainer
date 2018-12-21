@@ -22,6 +22,9 @@
 #OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #SOFTWARE.
 
+#python3 trainer.py --gpu=0 --id="baseline_resnet34_cifar10" --arch="resnet34" --root="./" --data="../datasets/cifar10" --dataset="cifar10"
+#python3 trainer.py --gpu=1 --id="rmor_resnet34_cifar100_b0.25" --arch="rmor34" --root="./" --data="../datasets/cifar100" --dataset="cifar100"
+
 import numpy as np
 import os
 import sys
@@ -123,25 +126,25 @@ def main():
     ##Generate net
     if(NET_TYPE == 'resnet18'):
         from models.resnet import ResNet, BasicBlock, Bottleneck
-        net = ResNet(BasicBlock, [2,2,2,2])
+        net = ResNet(BasicBlock, [2,2,2,2], num_classes=TOT_CLASSES)
     elif(NET_TYPE == 'resnet34'):
         from models.resnet import ResNet, BasicBlock, Bottleneck
-        net = ResNet(BasicBlock, [3, 4, 6, 3])
+        net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=TOT_CLASSES)
     elif(NET_TYPE == 'resnet50'):
         from models.resnet import ResNet, BasicBlock, Bottleneck
-        net = ResNet(Bottleneck, [3,4,6,3])
+        net = ResNet(Bottleneck, [3,4,6,3], num_classes=TOT_CLASSES)
     elif(NET_TYPE == 'resnet101'):
         from models.resnet import ResNet, BasicBlock, Bottleneck
-        net = ResNet(Bottleneck, [3,4,23,3])
+        net = ResNet(Bottleneck, [3,4,23,3], num_classes=TOT_CLASSES)
     elif(NET_TYPE == 'resnet152'):
         from models.resnet import ResNet, BasicBlock, Bottleneck
-        net = ResNet(Bottleneck, [3,8,36,3])
+        net = ResNet(Bottleneck, [3,8,36,3], num_classes=TOT_CLASSES)
     elif(NET_TYPE == 'mor18'):
         from models.mor import ResNet, BasicBlock, Bottleneck
-        net = ResNet(BasicBlock, [2,2,2,2])
+        net = ResNet(BasicBlock, [2,2,2,2], num_classes=TOT_CLASSES)
     elif(NET_TYPE == 'mor34'):
         from models.mor import ResNet, BasicBlock, Bottleneck
-        net = ResNet(BasicBlock, [3, 4, 6, 3])
+        net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=TOT_CLASSES)
     elif(NET_TYPE == 'moround18'):
         from models.mor import ResNet, BasicBlock, Bottleneck
         net = ResNet(BasicBlock, [2,2,2,2], num_classes=TOT_CLASSES, round_g=True)
