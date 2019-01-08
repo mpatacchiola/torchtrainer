@@ -79,19 +79,19 @@ def main():
     ##Generate net
     if(NET_TYPE == 'resnet18'):
         from models.resnet import ResNet, BasicBlock, Bottleneck
-        net = ResNet(BasicBlock, [2,2,2,2])
+        net = ResNet(BasicBlock, [2,2,2,2], num_classes=TOT_CLASSES)
     elif(NET_TYPE == 'resnet34'):
         from models.resnet import ResNet, BasicBlock, Bottleneck
-        net = ResNet(BasicBlock, [3, 4, 6, 3])
+        net = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=TOT_CLASSES)
     elif(NET_TYPE == 'resnet50'):
         from models.resnet import ResNet, BasicBlock, Bottleneck
-        net = ResNet(Bottleneck, [3,4,6,3])
+        net = ResNet(Bottleneck, [3,4,6,3], num_classes=TOT_CLASSES)
     elif(NET_TYPE == 'resnet101'):
         from models.resnet import ResNet, BasicBlock, Bottleneck
-        net = ResNet(Bottleneck, [3,4,23,3])
+        net = ResNet(Bottleneck, [3,4,23,3], num_classes=TOT_CLASSES)
     elif(NET_TYPE == 'resnet152'):
         from models.resnet import ResNet, BasicBlock, Bottleneck
-        net = ResNet(Bottleneck, [3,8,36,3])
+        net = ResNet(Bottleneck, [3,8,36,3], num_classes=TOT_CLASSES)
     elif(NET_TYPE == 'mor18'):
         from models.mor import ResNet, BasicBlock, Bottleneck
         net = ResNet(BasicBlock, [2,2,2,2], num_classes=TOT_CLASSES, round_g=True)
