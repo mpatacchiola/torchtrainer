@@ -131,9 +131,12 @@ class ResNet(nn.Module):
         self.gate_output_list = list()
         for linear_local in self.linearg_list:
             outg_local = linear_local(outg)
+            #TODO: uncomment and fix
             outg_local = F.gumbel_softmax(outg_local, tau=gumbel_tau, 
                                           hard=self.round_g, eps=1e-10)
             self.gate_output_list.append(outg_local[:, 0])
+            #print(1.0 - torch.argmax(outg_local, dim=1))
+            #self.gate_output_list.append(1.0 - torch.argmax(outg_local, dim=1).float()) #TODO: remove torch.round()
 
         #ResNet output
         out = F.relu(self.bn1(self.conv1(x)))

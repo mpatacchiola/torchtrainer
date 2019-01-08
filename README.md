@@ -8,12 +8,12 @@ Training a ResNet
 -----------------
 
 ```
-python3 ./trainer.py --gpu=0 --id="baseline_resnet34_cifar10" --arch="resnet34" --root="./" --data="../datasets/cifar10"
+python3 ./trainer.py --gpu=0 --id="baseline_resnet34_cifar10" --arch="resnet34" --root="./" --dataset="cifar10" --data="../datasets/cifar10"
 ```
 
 Testing a ResNet
 -----------------
 
 ```
-python3 ./tester.py --gpu=0 --id="baseline_resnet34_cifar10" --arch="resnet34" --root="./" --data="../datasets/cifar10" --resume="./baseline_resnet34_cifar10_ep200/checkpoint/ckpt_resnet34_01112018_120948_ep199.t7"
+python3 ./tester.py --gpu=0 --id="baseline_resnet34_cifar10" --arch="resnet34" --root="./" --dataset="cifar10" --data="../datasets/cifar10" --resume="./baseline_resnet34_cifar10_ep200/checkpoint/ckpt_resnet34_01112018_120948_ep199.t7"
 ```

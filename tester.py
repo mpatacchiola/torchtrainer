@@ -28,16 +28,12 @@ def return_cifar10_testing(dataset_path, download = False, mini_batch_size = 64)
     return testloader  
 
 def return_cifar100_testing(dataset_path, download=False, mini_batch_size = 64):
-    transform = transforms.Compose([transforms.RandomHorizontalFlip(),
-                                    transforms.RandomCrop(size=[32,32], padding=4),
-                                    transforms.ToTensor(),
+    transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-    #transform = transforms.Compose([transforms.ToTensor(),
-    #                                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-    trainset = torchvision.datasets.CIFAR100(root=dataset_path, train=False,
+    testset = torchvision.datasets.CIFAR100(root=dataset_path, train=False,
                                             download=download, transform=transform)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=mini_batch_size, shuffle=True, num_workers=8)
-    return trainloader
+    testloader = torch.utils.data.DataLoader(testset, batch_size=mini_batch_size, shuffle=False, num_workers=8)
+    return testloader
         
 def main():
     ##Parser
